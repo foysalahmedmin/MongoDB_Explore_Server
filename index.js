@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+require('dotenv').config()
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const data = require('./Data/data.json')
 require("dotenv").config();
 const app = express();
@@ -11,7 +12,7 @@ app.use(express.json()) ; // middle way;
 
 
 
-const uri = "mongodb+srv://foysalahmedmin:MRVDcSdHlmk5GdrQ@cluster0.3a8hhgg.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_PASSWORD}@cluster0.3a8hhgg.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -26,6 +27,52 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const database = client.db("ExploreUsersDB");
+    const ExploreUsersCollection = database.collection("ExploreUsers");
+
+    app.get('/users', async(req, res) => {
+      const cursor = ExploreUsersCollection.find();
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    app.get('/users/:id', async(req, res) => {
+      const id = req.params.id ;
+      const query = { _id: new ObjectId (id) }
+      const result = await ExploreUsersCollection.findOne(query);
+      res.send(result)
+    })
+
+    app.post('/users', async(req, res) => {
+      const user = req.body ;
+      const result = await ExploreUsersCollection.insertOne(user);
+      res.send(result)
+    })
+
+    app.delete('/users/:id', async(req, res) => {
+      const id = req.params.id ;
+      const query = { _id: new ObjectId (id) }
+      const result = await ExploreUsersCollection.deleteOne(query);
+      res.send(result)
+    })
+
+    app.put('/users/:id', async(req, res) => {
+      const id = req.params.id ;
+      const user = req.body
+      const filter = { _id: new ObjectId (id) }
+      const options = {upsert: true}
+      const updateUser = {
+        $set : {
+          name: user.name,
+          email: user.email,
+          password: user.password
+        }
+      }
+      const result = await ExploreUsersCollection.updateOne(filter, updateUser, options);
+      res.send(result)
+    })
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -35,17 +82,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-
-app.get('/', (req, res) => {
-  res.send(data);
-})
-
-app.get('/:id', (req, res) => {
-  const id = req.params.id;
-  const singeData = data?.find(x => x.id === +id)
-  res.send(singeData);
-})
 
 
 app.listen(port, () => {
