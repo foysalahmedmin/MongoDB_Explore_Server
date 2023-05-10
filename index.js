@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const data = require('./Data/data.json')
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000 ;
@@ -66,7 +65,9 @@ async function run() {
         $set : {
           name: user.name,
           email: user.email,
-          password: user.password
+          password: user.password,
+          gender: user.gender,
+          status: user.status
         }
       }
       const result = await ExploreUsersCollection.updateOne(filter, updateUser, options);
